@@ -4,8 +4,8 @@ from game import Game
 from display import Display
 from level_selection import LevelSelection
 from easy import EasyLevel
-from medium import MediumLevel  # Import the MediumLevel class
-from hard import HardLevel  # Import the HardLevel class
+from medium import MediumLevel  
+from hard import HardLevel  
 
 class Menu:
     def __init__(self, screen_width, screen_height):
@@ -16,6 +16,7 @@ class Menu:
         self.title_font = pygame.font.Font(None, int(screen_height * 0.08))
         self.option_font = pygame.font.Font(None, int(screen_height * 0.05))
         self.title = "Memory Match Game"
+        self.selected_difficulty = "easy"  
         
         self.option_texts = [
             "Easy (4x4)",
@@ -34,9 +35,9 @@ class Menu:
     
     def render_options(self):
         colors = [
-            (0, 255, 0),    # Green for Easy
-            (255, 165, 0),  # Orange for Medium
-            (255, 0, 0),    # Red for Hard
+            (0, 255, 0),    
+            (255, 165, 0), 
+            (255, 0, 0),    
             self.text_color,
             self.text_color,
             self.text_color
@@ -72,7 +73,8 @@ class Menu:
         for i in range(len(self.options)):
             option_rect = self.options[i].get_rect(center=(self.screen_width // 2, self.screen_height * (0.3 + i * 0.1)))
             if option_rect.collidepoint(pos):
-                if i in [0, 1, 2]:  # Easy, Medium, Hard
+                if i in [0, 1, 2]:
+                    self.selected_difficulty = ["easy", "medium", "hard"][i]
                     return i + 1
                 elif i == 3:
                     self.selected_mode = "Light"
@@ -108,8 +110,8 @@ def main():
     menu = Menu(width, height)
     level_selection = None
     easy_levels = EasyLevel()
-    medium_levels = MediumLevel()  # Create an instance of MediumLevel
-    hard_levels = HardLevel()  # Create an instance of HardLevel
+    medium_levels = MediumLevel()  
+    hard_levels = HardLevel()  
     clock = pygame.time.Clock()
     running = True
 
@@ -119,10 +121,28 @@ def main():
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if game:
-                    if game.game_over:
-                        game = game.reset(menu.selected_mode)
-                    else:
-                        game.handle_click(pygame.mouse.get_pos())
+                    result = game.handle_click(pygame.mouse.get_pos())
+                    if result == "menu":
+                        game = None
+                        level_selection = None  # Explicitly clear level selection
+                    elif game.game_over:
+                        if result == "menu":
+                            game = None
+                            level_selection = None  # Explicitly clear level selection
+                        else:
+                            game = game.reset(menu.selected_difficulty)
+                    elif result == "next_level":
+                        next_level_number = game.level.number + 1
+                        if next_level_number <= 5: 
+                            if game.level.difficulty == "easy":
+                                next_level = EasyLevel().get_level(next_level_number)
+                            elif game.level.difficulty == "medium":
+                                next_level = MediumLevel().get_level(next_level_number)
+                            elif game.level.difficulty == "hard":
+                                next_level = HardLevel().get_level(next_level_number)
+                            game = Game(next_level, game.mode)
+                        elif result == "menu":
+                            game = None
                 elif level_selection:
                     level_number = level_selection.handle_click(pygame.mouse.get_pos())
                     if level_number:
@@ -130,19 +150,20 @@ def main():
                             level = easy_levels.get_level(level_number)
                         elif level_selection.title.startswith("Select Level - Medium"):
                             level = medium_levels.get_level(level_number)
-                        elif level_selection.title.startswith("Select Level - Hard"):  # Add this line
-                            level = hard_levels.get_level(level_number)  # Add this line
+                        elif level_selection.title.startswith("Select Level - Hard"):  
+                            level = hard_levels.get_level(level_number)  
                         game = Game(level, menu.selected_mode)
                         level_selection = None
                 else:
                     difficulty = menu.handle_click(pygame.mouse.get_pos())
                     if difficulty:
-                        if difficulty == 1:  # Easy
+                        if difficulty == 1:  
                             level_selection = LevelSelection(width, height, "Easy")
-                        elif difficulty == 2:  # Medium
+                        elif difficulty == 2:  
                             level_selection = LevelSelection(width, height, "Medium")
-                        elif difficulty == 3:  # Hard
-                            level_selection = LevelSelection(width, height, "Hard")  # Add this line
+                        elif difficulty == 3:  
+                            level_selection = LevelSelection(width, height, "Hard")
+                        level_selection.set_theme(menu.selected_mode)  
 
             elif event.type == pygame.MOUSEMOTION:
                 if level_selection:
@@ -150,9 +171,9 @@ def main():
                 else:
                     menu.update_hover(pygame.mouse.get_pos())
 
-        display.clear()
+        display.clear(menu.selected_mode.lower())
         if game:
-            game.update(event)  # Pass the event to the update method
+            game.update(event)
             game.draw(display.screen)
         elif level_selection:
             level_selection.draw(display.screen)
