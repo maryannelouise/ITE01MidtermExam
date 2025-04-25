@@ -6,6 +6,7 @@ from level_selection import LevelSelection
 from easy import EasyLevel
 from medium import MediumLevel  
 from hard import HardLevel  
+from welcome import WelcomePage
 
 class Menu:
     def __init__(self, screen_width, screen_height):
@@ -105,6 +106,10 @@ def main():
     width, height = screen_info.current_w, screen_info.current_h
 
     display = Display(width, height, fullscreen=True)  
+
+    # Launch welcome page first
+    welcome_page = WelcomePage(display.screen)
+    welcome_page.run()
 
     game = None
     menu = Menu(width, height)
